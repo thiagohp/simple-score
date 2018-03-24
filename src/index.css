@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.totalScore .total {
+	font-weight: bold;
+	color: blue;
+	border-top: 1px solid black;
+	padding-left: 5px;
+	padding-right: 1px;
+}
+
+.playerScore {
+	text-align: center;
+}
+
+.playerScore li {
+	list-style-type: none;
+}
+
+.totalScore .label {
+	display: none;
+}
