@@ -2,20 +2,6 @@ import React, { Component } from 'react';
 //import logo from './logo.svg';
 import './App.css';
 
-/*
-function addPlayer(name) {
-	state.push({'name': name, 'scores': {}});
-}
-
-function addScore(name, value) {
-	state[name].scores.push(value);
-}
-
-function totalScore(name) {
-	return state[name].scores.reduce(0, (a,b) => {a + b});
-}
-* */
-
 class PlayerRenderer extends Component {
 	
 	constructor(props) {
@@ -100,7 +86,7 @@ class App extends Component {
 			<div className="app">
 				<div className="container">
 					<header className="App-header">
-						<h1>Buraco score!</h1>
+						<h1>Simple score</h1>
 					</header>
 				</div>
 				<div className="container">
