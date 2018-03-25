@@ -2,6 +2,28 @@ import React, { Component } from 'react';
 //import logo from './logo.svg';
 import './App.css';
 
+const ADD_PLAYER = 'addPlayer';
+const ADD_SCORE = 'addPlayer';
+
+function createAddPlayerAction(name) {
+	return {
+		type: ADD_PLAYER;
+		payload: {
+			name: name;
+		}
+	}
+}
+
+function createAddScoreAction(name, score) {
+	return {
+		type: ADD_SCORE;
+		payload: {
+			name: name;
+			score: score;
+		}
+	}
+}
+
 class PlayerRenderer extends Component {
 	
 	constructor(props) {
