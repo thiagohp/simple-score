@@ -1,25 +1,69 @@
 import React, { Component } from 'react';
 //import logo from './logo.svg';
 import './App.css';
+import { createStore } from 'redux'
 
 const ADD_PLAYER = 'addPlayer';
-const ADD_SCORE = 'addPlayer';
+const ADD_SCORE = 'addScore';
+
+/*
+var initialStateWithData = {
+	Thiago : {
+		name: 'Thiago',
+		scores: [100, 500 -900]
+	},
+	Cristilene : {
+		name: 'Cristilene',
+		scores: [1200, 500 -200]
+	},
+};*/
+
+var initialState = {};
+
+function reducer(state = initialState, action) {
+	var newState;
+	switch (action.type) {
+		case ADD_PLAYER: {
+			newState = Object.assign({}, state, {
+				[action.payload.name]: {
+					name: action.payload.name,
+					scores: []
+				}
+			});
+			break;
+		}
+		case ADD_SCORE: {
+			newState = Object.assign({}, state, {
+				[action.payload.name]: {
+					name: action.payload.name,
+					scores: [...state[action.payload.name].scores, action.payload.score]
+				}
+			});
+			break;
+		}
+		default:
+			newState = state;
+	}
+	return newState;
+}
+
+var store = createStore(reducer);
 
 function createAddPlayerAction(name) {
 	return {
-		type: ADD_PLAYER;
+		type: ADD_PLAYER,
 		payload: {
-			name: name;
+			name: name
 		}
 	}
 }
 
 function createAddScoreAction(name, score) {
 	return {
-		type: ADD_SCORE;
+		type: ADD_SCORE,
 		payload: {
-			name: name;
-			score: score;
+			name: name,
+			score: score
 		}
 	}
 }
@@ -47,18 +91,18 @@ class PlayerRenderer extends Component {
 		return (
 			<div className="col-sm">
 				<h2>{this.props.player.name}</h2>
-				<ul class="playerScore">{
+				<ul className="playerScore">{
 					this.props.player.scores.map(score =>
 						<li>{score}</li>
 					)
 				}
-					<li class="totalScore">
-						<span class="label">Total</span>
-						<span class="total">{this.props.player.scores.reduce((a, b) => a + b, 0)}</span>
+					<li className="totalScore">
+						<span className="label">Total</span>
+						<span className="total">{this.props.player.scores.reduce((a, b) => a + b, 0)}</span>
 					</li>
 				</ul>
 				<form onSubmit={this.addScore}>
-					<label for={this.getFieldId()}>Add score</label>
+					<label htmlFor={this.getFieldId()}>Add score</label>
 					<input type="number" id={this.getFieldId()}/>
 				</form>
 			</div>
@@ -71,36 +115,20 @@ class App extends Component {
 	
 	constructor(props) {
 		super(props);
-		this.state = {
-			Thiago : {
-				name: 'Thiago',
-				scores: [100, 500 -900]
-			},
-			Cristilene : {
-				name: 'Cristilene',
-				scores: [1200, 500 -200]
-			},
-		};
 		this.addPlayer = this.addPlayer.bind(this);
 		this.addScore = this.addScore.bind(this);
+		this.state = store.getState();
 	}
 	
 	addScore(playerName, score) {
-		this.setState(previousState => {
-			let newState = JSON.parse(JSON.stringify(previousState))
-			newState[playerName].scores.push(score);
-			return newState;
-		});
+		store.dispatch(createAddScoreAction(playerName, score));
+		this.setState(store.getState());
 	}
 	
 	addPlayer(event) {
 		event.preventDefault();
-		this.setState({
-			[event.target.newPlayer.value] : { 
-				name : event.target.newPlayer.value,
-				scores: []
-			}
-		});
+		store.dispatch(createAddPlayerAction(event.target.newPlayer.value));
+		this.setState(store.getState());
 	}
 	
 	render() {
@@ -112,9 +140,9 @@ class App extends Component {
 					</header>
 				</div>
 				<div className="container">
-					<div class="row">{	
+					<div className="row">{	
 						Object.keys(this.state).map(playerName => 
-							<PlayerRenderer player={this.state[playerName]} addScore={this.addScore}/>
+							<PlayerRenderer player={this.state[playerName]} addScore={this.addScore} key={playerName}/>
 						)
 					}
 					</div>
