@@ -5,6 +5,8 @@ import { createStore } from 'redux'
 
 const ADD_PLAYER = 'addPlayer';
 const ADD_SCORE = 'addScore';
+const CHANGE_THEME = 'changeTheme';
+const THEMES = ['Default', 'Dark'];
 
 /*
 var initialStateWithData = {
@@ -18,26 +20,39 @@ var initialStateWithData = {
 	},
 };*/
 
-var initialState = {};
+var initialState = {
+	theme: THEMES[0],
+	match: {}
+};
 
 function reducer(state = initialState, action) {
 	var newState;
 	switch (action.type) {
 		case ADD_PLAYER: {
 			newState = Object.assign({}, state, {
-				[action.payload.name]: {
-					name: action.payload.name,
-					scores: []
-				}
+				match: Object.assign(state.match, {
+					[action.payload.name]: {
+						name: action.payload.name,
+						scores: []
+					}
+				})
 			});
 			break;
 		}
 		case ADD_SCORE: {
 			newState = Object.assign({}, state, {
-				[action.payload.name]: {
-					name: action.payload.name,
-					scores: [...state[action.payload.name].scores, action.payload.score]
-				}
+				match: Object.assign(state.match, {
+					[action.payload.name]: {
+						name: action.payload.name,
+						scores: [...state.match[action.payload.name].scores, action.payload.score]
+					}
+				})
+			});
+			break;
+		}
+		case CHANGE_THEME: {
+			newState = Object.assign({}, state, {
+				theme: action.payload.theme,
 			});
 			break;
 		}
@@ -67,6 +82,44 @@ function createAddScoreAction(name, score) {
 		}
 	}
 }
+
+function createChangeThemeAction(theme) {
+	return {
+		type: CHANGE_THEME,
+		payload: {
+			theme: theme
+		}
+	}
+}
+
+class ThemeChanger extends Component {
+	
+	constructor(props) {
+		super(props);
+		this.changeTheme = this.changeTheme.bind(this);
+	}
+	
+	changeTheme(event) {
+		event.preventDefault();
+		this.props.changeTheme(event.target.value);
+	}
+	
+	render() {
+		return (
+			<form class="themeSelectorForm">
+				<label for="themeSelector">Theme</label>
+				<select id="themeSelector" onChange={this.changeTheme}> {
+					THEMES.map(theme => (
+						<option>{theme}</option>
+					))
+				}
+				</select>
+			</form>
+		) 
+	}
+	
+}
+
 
 class PlayerRenderer extends Component {
 	
@@ -117,11 +170,17 @@ class App extends Component {
 		super(props);
 		this.addPlayer = this.addPlayer.bind(this);
 		this.addScore = this.addScore.bind(this);
+		this.changeTheme = this.changeTheme.bind(this);
 		this.state = store.getState();
 	}
 	
 	addScore(playerName, score) {
 		store.dispatch(createAddScoreAction(playerName, score));
+		this.setState(store.getState());
+	}
+	
+	changeTheme(theme) {
+		store.dispatch(createChangeThemeAction(theme));
 		this.setState(store.getState());
 	}
 	
@@ -133,7 +192,7 @@ class App extends Component {
 	
 	render() {
 		return (
-			<div className="app">
+			<div className={'app theme-' + this.state.theme.toLowerCase()}>
 				<div className="container">
 					<header className="App-header">
 						<h1>Simple score</h1>
@@ -141,8 +200,8 @@ class App extends Component {
 				</div>
 				<div className="container">
 					<div className="row">{	
-						Object.keys(this.state).map(playerName => 
-							<PlayerRenderer player={this.state[playerName]} addScore={this.addScore} key={playerName}/>
+						Object.keys(this.state.match).map(playerName => 
+							<PlayerRenderer player={this.state.match[playerName]} addScore={this.addScore} key={playerName}/>
 						)
 					}
 					</div>
@@ -154,6 +213,7 @@ class App extends Component {
 						<input type="submit" value="Add player"/>
 					</form>
 				</div>
+				<ThemeChanger changeTheme={this.changeTheme}/>
 			</div>
 		);
 	}
