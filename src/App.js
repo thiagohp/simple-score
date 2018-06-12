@@ -164,13 +164,40 @@ class PlayerRenderer extends Component {
 
 }
 
-class App extends Component {
+class AddPlayerForm extends Component {
 	
 	constructor(props) {
 		super(props);
 		this.addPlayer = this.addPlayer.bind(this);
+	}
+	
+	addPlayer(event) {
+		event.preventDefault();
+		this.props.addPlayer(event.target.newPlayer.value);
+	}
+	
+	render() {
+		return (
+			<div className="container-fluid">
+				<form onSubmit={this.addPlayer}>
+					<label>New player</label>
+					<input type="text" id="newPlayer" name="newPlayer"/>
+					<input type="submit" value="Add player"/>
+				</form>
+			</div>
+		) 
+	}
+	
+}
+
+
+class App extends Component {
+	
+	constructor(props) {
+		super(props);
 		this.addScore = this.addScore.bind(this);
 		this.changeTheme = this.changeTheme.bind(this);
+		this.addPlayer = this.addPlayer.bind(this);
 		this.state = store.getState();
 	}
 	
@@ -184,9 +211,8 @@ class App extends Component {
 		this.setState(store.getState());
 	}
 	
-	addPlayer(event) {
-		event.preventDefault();
-		store.dispatch(createAddPlayerAction(event.target.newPlayer.value));
+	addPlayer(player) {
+		store.dispatch(createAddPlayerAction(player));
 		this.setState(store.getState());
 	}
 	
@@ -206,13 +232,7 @@ class App extends Component {
 					}
 					</div>
 				</div>
-				<div className="container-fluid">
-					<form onSubmit={this.addPlayer}>
-						<label>New player</label>
-						<input type="text" id="newPlayer" name="newPlayer"/>
-						<input type="submit" value="Add player"/>
-					</form>
-				</div>
+				<AddPlayerForm addPlayer={this.addPlayer}/>
 				<ThemeChanger changeTheme={this.changeTheme}/>
 			</div>
 		);
