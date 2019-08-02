@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 //import logo from './logo.svg';
 import './App.css';
 import { createStore } from 'redux'
+import { connect } from 'react-redux'
 
 const ADD_PLAYER = 'addPlayer';
 const ADD_SCORE = 'addScore';
@@ -21,7 +22,7 @@ var initialStateWithData = {
 };*/
 
 var initialState = {
-	theme: THEMES[0],
+	theme: THEMES[1],
 	match: {}
 };
 
@@ -37,6 +38,7 @@ function reducer(state = initialState, action) {
 					}
 				})
 			});
+			console.log('ADD_PLAYER ' + JSON.stringify(action) + ' New state: ' + JSON.stringify(newState));
 			break;
 		}
 		case ADD_SCORE: {
@@ -93,41 +95,55 @@ function createChangeThemeAction(theme) {
 }
 
 class ThemeChanger extends Component {
-	
-	constructor(props) {
-		super(props);
-		this.changeTheme = this.changeTheme.bind(this);
-	}
-	
-	changeTheme(event) {
-		event.preventDefault();
-		this.props.changeTheme(event.target.value);
-	}
-	
+
 	render() {
 		return (
-			<form class="themeSelectorForm">
-				<label for="themeSelector">Theme</label>
-				<select id="themeSelector" onChange={this.changeTheme}> {
+			<form className="themeSelectorForm">
+				<label htmlFor="themeSelector">Theme</label>
+				<select id="themeSelector" value={this.props.theme}
+					onChange={this.props.changeTheme}> {
 					THEMES.map(theme => (
-						<option>{theme}</option>
+						<option
+							value={theme}
+							key={'theme-option-' + theme}>{theme}</option>
 					))
 				}
 				</select>
 			</form>
-		) 
+		)
 	}
-	
+
 }
+
+var ThemeChangerContainer = connect(
+	// mapStateToProps
+	(state, ownProps) => {
+		console.log('mapStateToProps ThemeChangerContainer ', state, ownProps);
+		return {
+			theme: state.theme
+		}
+	},
+	// mapDispatchToProps
+	(dispatch) => {
+		return {
+			changeTheme : (event) => {
+				console.log('ThemeChanger event')
+				event.preventDefault();
+				dispatch(createChangeThemeAction(event.target.value));
+			}
+		}
+	}
+
+)(ThemeChanger);
 
 
 class PlayerRenderer extends Component {
-	
+
 	constructor(props) {
 		super(props);
 		this.addScore = this.addScore.bind(this);
 	}
-	
+
 	addScore(event) {
 		event.preventDefault();
 		this.props.addScore(
@@ -135,12 +151,13 @@ class PlayerRenderer extends Component {
 			parseInt(event.target[this.getFieldId()].value, 10)
 		)
 	}
-	
+
 	getFieldId() {
 		return this.props.player.name + '-add-score';
 	}
 
 	render() {
+		console.log('PlayerRenderer.render')
 		return (
 			<div className="col-sm">
 				<h2>{this.props.player.name}</h2>
@@ -165,78 +182,82 @@ class PlayerRenderer extends Component {
 }
 
 class AddPlayerForm extends Component {
-	
-	constructor(props) {
-		super(props);
-		this.addPlayer = this.addPlayer.bind(this);
-	}
-	
-	addPlayer(event) {
-		event.preventDefault();
-		this.props.addPlayer(event.target.newPlayer.value);
-	}
-	
+
 	render() {
 		return (
 			<div className="container-fluid">
-				<form onSubmit={this.addPlayer}>
-					<label>New player</label>
+				<form onSubmit={this.props.addPlayer}>
+		 			<label htmlFor="newPlayer">New player</label>
 					<input type="text" id="newPlayer" name="newPlayer"/>
 					<input type="submit" value="Add player"/>
 				</form>
 			</div>
-		) 
+		)
 	}
-	
+
 }
 
+var AddPlayerFormContainer = connect (
+	// mapStateToProps
+	null, //(state, ownProps) => { return {} },
+	// mapDispatchToProps
+	(dispatch) => {
+		return {
+			addPlayer : (event) => {
+				event.preventDefault();
+				dispatch(createAddPlayerAction(event.target.newPlayer.value));
+			}
+		}
+	}
+
+)(AddPlayerForm);
 
 class App extends Component {
-	
-	constructor(props) {
-		super(props);
-		this.addScore = this.addScore.bind(this);
-		this.changeTheme = this.changeTheme.bind(this);
-		this.addPlayer = this.addPlayer.bind(this);
-		this.state = store.getState();
-	}
-	
-	addScore(playerName, score) {
-		store.dispatch(createAddScoreAction(playerName, score));
-		this.setState(store.getState());
-	}
-	
-	changeTheme(theme) {
-		store.dispatch(createChangeThemeAction(theme));
-		this.setState(store.getState());
-	}
-	
-	addPlayer(player) {
-		store.dispatch(createAddPlayerAction(player));
-		this.setState(store.getState());
-	}
-	
+
 	render() {
+		console.log('App.render');
 		return (
-			<div className={'app theme-' + this.state.theme.toLowerCase()}>
+			<div className={'app theme-' + this.props.theme.toLowerCase()}>
 				<div className="container">
 					<header className="App-header">
 						<h1>Simple score</h1>
 					</header>
 				</div>
 				<div className="container">
-					<div className="row">{	
-						Object.keys(this.state.match).map(playerName => 
-							<PlayerRenderer player={this.state.match[playerName]} addScore={this.addScore} key={playerName}/>
+					<div className="row">{
+						Object.keys(this.props.match).map(playerName =>
+							<PlayerRenderer player={this.props.match[playerName]} addScore={this.props.addScore} key={playerName}/>
 						)
 					}
 					</div>
 				</div>
-				<AddPlayerForm addPlayer={this.addPlayer}/>
-				<ThemeChanger changeTheme={this.changeTheme}/>
+				<AddPlayerFormContainer/>
+				<ThemeChangerContainer/>
 			</div>
 		);
 	}
+
+/*	shouldComponentUpdate(nextProps, nextState) {
+		//var result = super.shouldComponentUpdate(nextProps, nextState);
+		console.log("App.shouldComponentUpdate", this.props, nextProps, nextState);
+		//return result;
+		return true;
+	}*/
+
 }
 
-export default App;
+// Just to get automatic updates without having to call this.setState()
+
+let AppContainer = connect(
+	(state, ownProps) => { console.log('mapStateToProps ', state, {...state}, ownProps); return {...state, 'a':'b'} },
+	(dispatch, ownProps) => {
+		return {
+			addScore: (playerName, score) => {
+				dispatch(createAddScoreAction(playerName, score));
+			}
+		}
+	}
+)(App)
+
+store.subscribe(() => console.log('State changed: ' + JSON.stringify(store.getState())));
+export { AppContainer as App, store}
