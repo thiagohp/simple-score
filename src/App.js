@@ -1,8 +1,6 @@
-import React, { Component } from 'react';
-//import logo from './logo.svg';
+import React, { useReducer, createContext, useContext } from 'react';
+import logo from './logo.svg';
 import './App.css';
-import { createStore } from 'redux'
-import { connect } from 'react-redux'
 
 const ADD_PLAYER = 'addPlayer';
 const ADD_SCORE = 'addScore';
@@ -26,7 +24,7 @@ var initialState = {
 	match: {}
 };
 
-function reducer(state = initialState, action) {
+function reducer(state, action) {
 	var newState;
 	switch (action.type) {
 		case ADD_PLAYER: {
@@ -64,7 +62,16 @@ function reducer(state = initialState, action) {
 	return newState;
 }
 
-var store = createStore(reducer);
+// From https://medium.com/simply/state-management-with-react-hooks-and-context-api-at-10-lines-of-code-baf6be8302c
+const StateContext = createContext();
+const StateProvider = ({reducer, initialState, children}) => (
+  <StateContext.Provider value={useReducer(reducer, initialState)}>
+    {children}
+  </StateContext.Provider>
+);
+const useStateValue = () => useContext(StateContext);
+// Usage: const [state, dispatch] = useStateValue();
+// Or:    const [{ propertyName }, dispatch] = useStateValue();
 
 function createAddPlayerAction(name) {
 	return {
@@ -94,170 +101,121 @@ function createChangeThemeAction(theme) {
 	}
 }
 
-class ThemeChanger extends Component {
-
-	render() {
-		return (
-			<form className="themeSelectorForm">
-				<label htmlFor="themeSelector">Theme</label>
-				<select id="themeSelector" value={this.props.theme}
-					onChange={this.props.changeTheme}> {
-					THEMES.map(theme => (
-						<option
-							value={theme}
-							key={'theme-option-' + theme}>{theme}</option>
-					))
-				}
-				</select>
-			</form>
-		)
+function ThemeChanger(props) {
+  const [state, dispatch] = useStateValue();
+	const changeTheme = (event) => {
+		console.log('ThemeChanger event')
+		event.preventDefault();
+		dispatch(createChangeThemeAction(event.target.value));
 	}
+
+	return (
+		<form className="themeSelectorForm">
+			<label htmlFor="themeSelector">Theme</label>
+			<select id="themeSelector" value={props.theme}
+				onChange={changeTheme}> {
+				THEMES.map(theme => (
+					<option
+						value={theme}
+						key={'theme-option-' + theme}>{theme}</option>
+				))
+			}
+			</select>
+		</form>
+	)
+}
+
+function PlayerRenderer(props) {
+
+  const [state, dispatch] = useStateValue();
+
+  function getFieldId() {
+		return props.player.name + '-add-score';
+	}
+
+	function addScore(event) {
+    event.preventDefault();
+    dispatch(createAddScoreAction(
+      props.player.name,
+      parseInt(event.target[getFieldId()].value, 10)));
+		event.target[getFieldId()].value = null;
+	}
+
+	console.log('PlayerRenderer.render')
+	return (
+		<div className="col-sm">
+			<h2>{props.player.name}</h2>
+			<ul className="playerScore">{
+				props.player.scores.map(score =>
+					<li>{score}</li>
+				)
+			}
+				<li className="totalScore">
+					<span className="label">Total</span>
+					<span className="total">{props.player.scores.reduce((a, b) => a + b, 0)}</span>
+				</li>
+			</ul>
+			<form onSubmit={addScore}>
+				<label htmlFor={getFieldId()}>Add score</label>
+				<input type="number" id={getFieldId()}/>
+			</form>
+		</div>
+	)
 
 }
 
-var ThemeChangerContainer = connect(
-	// mapStateToProps
-	(state, ownProps) => {
-		console.log('mapStateToProps ThemeChangerContainer ', state, ownProps);
-		return {
-			theme: state.theme
-		}
-	},
-	// mapDispatchToProps
-	(dispatch) => {
-		return {
-			changeTheme : (event) => {
-				console.log('ThemeChanger event')
-				event.preventDefault();
-				dispatch(createChangeThemeAction(event.target.value));
-			}
-		}
-	}
+function AddPlayerForm(props) {
 
-)(ThemeChanger);
+  const [state, dispatch] = useStateValue();
 
+  function addPlayer(event) {
+    event.preventDefault();
+    dispatch(createAddPlayerAction(event.target.newPlayer.value));
+		event.target.newPlayer.value = null;
+  }
 
-class PlayerRenderer extends Component {
+	return (
+		<div className="container-fluid">
+			<form onSubmit={addPlayer}>
+	 			<label htmlFor="newPlayer">New player</label>
+				<input type="text" id="newPlayer" name="newPlayer"/>
+				<input type="submit" value="Add player"/>
+			</form>
+		</div>
+	)
 
-	constructor(props) {
-		super(props);
-		this.addScore = this.addScore.bind(this);
-	}
+}
 
-	addScore(event) {
-		event.preventDefault();
-		this.props.addScore(
-			this.props.player.name,
-			parseInt(event.target[this.getFieldId()].value, 10)
-		)
-	}
-
-	getFieldId() {
-		return this.props.player.name + '-add-score';
-	}
-
-	render() {
-		console.log('PlayerRenderer.render')
-		return (
-			<div className="col-sm">
-				<h2>{this.props.player.name}</h2>
-				<ul className="playerScore">{
-					this.props.player.scores.map(score =>
-						<li>{score}</li>
+function App() {
+  const [state, dispatch] = useStateValue();
+	console.log('App.render: ' + JSON.stringify(state));
+	return (
+		<div className={'app theme-' + state.theme.toLowerCase()}>
+			<div className="container">
+				<header className="App-header">
+					<h1>Simple score</h1>
+				</header>
+			</div>
+			<div className="container">
+				<div className="row">{
+					Object.keys(state.match).map(playerName =>
+						<PlayerRenderer player={state.match[playerName]} key={playerName}/>
 					)
 				}
-					<li className="totalScore">
-						<span className="label">Total</span>
-						<span className="total">{this.props.player.scores.reduce((a, b) => a + b, 0)}</span>
-					</li>
-				</ul>
-				<form onSubmit={this.addScore}>
-					<label htmlFor={this.getFieldId()}>Add score</label>
-					<input type="number" id={this.getFieldId()}/>
-				</form>
-			</div>
-		)
-	}
-
-}
-
-class AddPlayerForm extends Component {
-
-	render() {
-		return (
-			<div className="container-fluid">
-				<form onSubmit={this.props.addPlayer}>
-		 			<label htmlFor="newPlayer">New player</label>
-					<input type="text" id="newPlayer" name="newPlayer"/>
-					<input type="submit" value="Add player"/>
-				</form>
-			</div>
-		)
-	}
-
-}
-
-var AddPlayerFormContainer = connect (
-	// mapStateToProps
-	null, //(state, ownProps) => { return {} },
-	// mapDispatchToProps
-	(dispatch) => {
-		return {
-			addPlayer : (event) => {
-				event.preventDefault();
-				dispatch(createAddPlayerAction(event.target.newPlayer.value));
-			}
-		}
-	}
-
-)(AddPlayerForm);
-
-class App extends Component {
-
-	render() {
-		console.log('App.render');
-		return (
-			<div className={'app theme-' + this.props.theme.toLowerCase()}>
-				<div className="container">
-					<header className="App-header">
-						<h1>Simple score</h1>
-					</header>
 				</div>
-				<div className="container">
-					<div className="row">{
-						Object.keys(this.props.match).map(playerName =>
-							<PlayerRenderer player={this.props.match[playerName]} addScore={this.props.addScore} key={playerName}/>
-						)
-					}
-					</div>
-				</div>
-				<AddPlayerFormContainer/>
-				<ThemeChangerContainer/>
 			</div>
-		);
-	}
-
-/*	shouldComponentUpdate(nextProps, nextState) {
-		//var result = super.shouldComponentUpdate(nextProps, nextState);
-		console.log("App.shouldComponentUpdate", this.props, nextProps, nextState);
-		//return result;
-		return true;
-	}*/
-
+      <AddPlayerForm/>
+      <ThemeChanger/>
+    </div>
+  )
 }
 
-// Just to get automatic updates without having to call this.setState()
+function AppWrapper() {
+	return (
+		<StateProvider initialState={initialState} reducer={reducer}>
+			<App/>
+		</StateProvider>
+	)
+}
 
-let AppContainer = connect(
-	(state, ownProps) => { console.log('mapStateToProps ', state, {...state}, ownProps); return {...state, 'a':'b'} },
-	(dispatch, ownProps) => {
-		return {
-			addScore: (playerName, score) => {
-				dispatch(createAddScoreAction(playerName, score));
-			}
-		}
-	}
-)(App)
-
-store.subscribe(() => console.log('State changed: ' + JSON.stringify(store.getState())));
-export { AppContainer as App, store}
+export default AppWrapper;
